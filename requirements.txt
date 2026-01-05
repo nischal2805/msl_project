@@ -1,0 +1,40 @@
+# ISL Real-Time Translation - Dependencies
+# ==========================================
+# Install with: pip install -r requirements.txt
+
+# Core Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Transformers (for tokenizer)
+transformers>=4.30.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+opencv-python>=4.8.0
+albumentations>=1.3.0
+
+# Configuration
+pyyaml>=6.0
+
+# Training Utilities
+tqdm>=4.65.0
+
+# Evaluation Metrics
+sacrebleu>=2.3.0
+jiwer>=3.0.0  # For WER
+
+# Export (optional - for mobile deployment)
+# onnx>=1.14.0
+# onnxruntime>=1.15.0
+# onnxruntime-extensions>=0.8.0  # For quantization
+
+# Logging (optional)
+# tensorboard>=2.13.0
+# wandb>=0.15.0
+
+# Development
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0

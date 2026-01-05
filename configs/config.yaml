@@ -1,0 +1,113 @@
+# ============================================
+# ISL Real-Time Translation - Configuration
+# ============================================
+# Optimized for: Samsung Galaxy Tab S9 (Snapdragon 8 Gen 2)
+# Training: NVIDIA A100 GPU
+# Dataset: iSign v1.1 (127K video-text pairs)
+
+# Model Architecture
+model:
+  encoder:
+    backbone: "mobilenetv3_large"
+    pretrained: true
+    freeze_epochs: 5           # Freeze backbone for first N epochs
+    output_dim: 512
+  
+  temporal:
+    num_queries: 32            # Compress video to 32 tokens
+    num_heads: 8
+    num_temporal_conv: 2       # Number of temporal conv blocks
+    kernel_size: 3
+    dropout: 0.1
+  
+  decoder:
+    hidden_dim: 512
+    num_layers: 4
+    num_heads: 8
+    ff_dim: 1024                   # Reduced for smaller model size
+    dropout: 0.1
+    max_len: 100               # Maximum output sequence length
+
+# Training Hyperparameters
+training:
+  # Batch settings
+  batch_size: 32               # Per-GPU batch size
+  gradient_accumulation: 2     # Effective batch = 32 * 2 = 64
+  num_epochs: 50
+  
+  # Optimizer settings (separate LRs for encoder/decoder)
+  encoder_lr: 1.0e-4
+  decoder_lr: 3.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.1            # 10% of total steps for warmup
+  
+  # Loss weights
+  ctc_weight: 0.3              # CTC loss weight
+  ce_weight: 0.7               # Cross-entropy weight (1 - ctc_weight)
+  label_smoothing: 0.1
+  
+  # Gradient clipping
+  max_grad_norm: 1.0
+  
+  # Early stopping
+  patience: 10
+  
+  # Checkpointing
+  save_every_n_epochs: 5       # Save checkpoint every N epochs
+  keep_last_n_checkpoints: 3   # Keep only last N checkpoints (saves disk)
+  
+  # Mixed precision training
+  use_amp: true
+  
+  # Resume training
+  resume_from: null            # Path to checkpoint to resume from
+
+# Data Configuration
+data:
+  # Dataset paths (UPDATE THESE FOR YOUR SYSTEM)
+  video_dir: "E:/iSign-videos_v1.1"
+  csv_path: "E:/5thsem el/Approach-3/isl_realtime/iSign_v1.1.csv"
+  
+  num_frames: 16               # Frames to sample per video
+  image_size: 224              # Input image size
+  num_workers: 4               # DataLoader workers (reduced for Windows)
+  
+  # Data splits (by uid hash)
+  train_split: 0.8             # 80% for training
+  val_split: 0.1               # 10% for validation
+  test_split: 0.1              # 10% for testing
+
+# Tokenizer Configuration
+tokenizer:
+  name: "bert-base-uncased"
+  bos_id: 101                  # [CLS] token
+  eos_id: 102                  # [SEP] token
+  pad_id: 0                    # [PAD] token
+
+# Inference Configuration
+inference:
+  temperature: 0.8             # Sampling temperature
+  beam_size: 4                 # For beam search
+  length_penalty: 1.0          # Length penalty for beam search
+
+# Logging
+logging:
+  log_every_n_steps: 50
+  wandb:
+    enabled: false
+    project: "isl-translation"
+    entity: null
+
+# Export Configuration (for mobile deployment)
+export:
+  onnx:
+    opset_version: 14
+    dynamic_axes: true
+  tflite:
+    quantization: "int8"       # int8 quantization for mobile
+
+# Paths
+paths:
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+  export_dir: "exports"
