@@ -422,9 +422,9 @@ class ISLTrainer:
             self.history['val_loss'].append(val_metrics['val_loss'])
             self.history['learning_rates'].append(self.scheduler.get_last_lr())
             
-            # Sample prediction
-            if epoch % 5 == 0 or epoch == 1:
-                self._log_sample_prediction()
+            # Sample prediction - show every epoch after frozen period
+            if epoch >= 5 or epoch == 1:
+                self._log_sample_prediction(num_samples=5)
             
             # Checkpointing
             is_best = val_metrics['val_loss'] < self.best_metric
@@ -456,24 +456,32 @@ class ISLTrainer:
         print(f"[INFO] Best validation loss: {self.best_metric:.4f}")
     
     @torch.no_grad()
-    def _log_sample_prediction(self):
-        """Log a sample prediction for debugging."""
+    def _log_sample_prediction(self, num_samples: int = 5):
+        """Log sample predictions for debugging.
+        
+        Args:
+            num_samples: Number of samples to show (5-10 recommended)
+        """
         self.model.eval()
         
         batch = next(iter(self.val_loader))
-        video = batch['video'][:1].to(self.device)
-        ref_text = batch['texts'][0]
+        videos = batch['video'][:num_samples].to(self.device)
+        ref_texts = batch['texts'][:num_samples]
         
-        # Generate prediction
-        pred_tokens = self.model.translate(video, temperature=0.8)
-        pred_text = self.tokenizer.decode(
-            pred_tokens[0].tolist(), 
-            skip_special_tokens=True
-        )
+        # Generate predictions
+        pred_tokens = self.model.translate(videos, temperature=0.8)
         
-        print(f"\n  Sample Prediction:")
-        print(f"    Target: {ref_text[:80]}...")
-        print(f"    Pred:   {pred_text[:80]}...\n")
+        print(f"\n  Sample Predictions ({num_samples} samples):")
+        print("  " + "-" * 60)
+        
+        for i, (pred_tok, ref_text) in enumerate(zip(pred_tokens, ref_texts)):
+            pred_text = self.tokenizer.decode(
+                pred_tok.tolist(), 
+                skip_special_tokens=True
+            )
+            print(f"  [{i+1}] Target: {ref_text[:70]}...")
+            print(f"      Pred:   {pred_text[:70]}...")
+            print()
     
     def _save_history(self):
         """Save training history to JSON."""
