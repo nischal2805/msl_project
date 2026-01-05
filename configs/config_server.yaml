@@ -66,7 +66,7 @@ training:
 data:
   # SERVER PATHS
   video_dir: "/media/rvcse22/CSERV/kortex_sem5/surya/videos/train"
-  csv_path: "/media/rvcse22/CSERV/kortex_sem5/iSign_v1.1.csv"
+  csv_path: "/media/rvcse22/CSERV/kortex_sem5/new/ISL_TRANSLATION/iSign_v1.1.csv"
   
   num_frames: 16               # Frames to sample per video
   image_size: 224              # Input image size
