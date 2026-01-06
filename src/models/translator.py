@@ -58,7 +58,8 @@ class ISLTranslator(nn.Module):
             freeze_epochs=config['encoder'].get('freeze_epochs', 5),
             num_temporal_conv=config['temporal'].get('num_temporal_conv', 2),
             kernel_size=config['temporal'].get('kernel_size', 3),
-            dropout=config['temporal'].get('dropout', 0.1)
+            dropout=config['temporal'].get('dropout', 0.1),
+            backbone=config['encoder'].get('backbone', 'mobilenetv3_large')
         )
         
         # Text Decoder

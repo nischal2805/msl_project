@@ -1,0 +1,99 @@
+# ============================================
+# ISL Translation - VARIANT B: EfficientNet Encoder
+# ============================================
+# Alternative architecture to compare with MobileNetV3
+# Run on GPU 2 while main experiment runs on GPU 0
+
+# Model Architecture - EFFICIENTNET VARIANT
+model:
+  encoder:
+    backbone: "efficientnet_b0"    # Changed from MobileNetV3
+    pretrained: true
+    freeze_epochs: 5
+    output_dim: 512
+  
+  temporal:
+    num_queries: 32
+    num_heads: 8
+    num_temporal_conv: 2
+    kernel_size: 3
+    dropout: 0.1
+  
+  decoder:
+    hidden_dim: 512
+    num_layers: 4                  # Same as baseline
+    num_heads: 8
+    ff_dim: 1024
+    dropout: 0.1
+    max_len: 100
+
+# Training Hyperparameters
+training:
+  batch_size: 48                   # Slightly smaller due to larger encoder
+  gradient_accumulation: 2
+  num_epochs: 50
+  
+  encoder_lr: 5.0e-5               # Lower LR for EfficientNet
+  decoder_lr: 3.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  
+  ctc_weight: 0.3
+  ce_weight: 0.7
+  label_smoothing: 0.1
+  
+  max_grad_norm: 1.0
+  patience: 10
+  
+  save_every_n_epochs: 5
+  keep_last_n_checkpoints: 3
+  use_amp: true
+  resume_from: null
+
+# Data Configuration
+data:
+  video_dir: "/media/rvcse22/CSERV/kortex_sem5/surya/videos/train"
+  csv_path: "/media/rvcse22/CSERV/kortex_sem5/new/ISL_TRANSLATION/iSign_v1.1.csv"
+  
+  num_frames: 16
+  image_size: 224
+  num_workers: 8
+  
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+
+# Tokenizer Configuration
+tokenizer:
+  name: "bert-base-uncased"
+  bos_id: 101
+  eos_id: 102
+  pad_id: 0
+
+# Inference Configuration
+inference:
+  temperature: 0.8
+  beam_size: 4
+  length_penalty: 1.0
+
+# Logging
+logging:
+  log_every_n_steps: 100
+  wandb:
+    enabled: false
+    project: "isl-translation-efficientnet"
+    entity: null
+
+# Export Configuration
+export:
+  onnx:
+    opset_version: 14
+    dynamic_axes: true
+  tflite:
+    quantization: "int8"
+
+# Paths - VARIANT B (separate checkpoints)
+paths:
+  checkpoint_dir: "checkpoints_efficientnet"
+  log_dir: "logs_efficientnet"
+  export_dir: "exports_efficientnet"

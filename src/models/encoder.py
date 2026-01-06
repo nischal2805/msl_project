@@ -170,16 +170,23 @@ class TemporalAttentionPooling(nn.Module):
 
 
 class VideoEncoder(nn.Module):
-    """MobileNetV3-Large backbone + Temporal Conv + Attention Pooling.
+    """Backbone + Temporal Conv + Attention Pooling.
+    
+    Supports multiple backbones:
+    - mobilenetv3_large: Efficient, mobile-optimized (~5.4M params)
+    - efficientnet_b0: Slightly larger, potentially more accurate (~5.3M params)
     
     This encoder is optimized for:
-    1. Mobile deployment (MobileNetV3 is efficient)
+    1. Mobile deployment (efficient backbone)
     2. Sign language (temporal convolutions capture motion)
     3. Fixed-length output (attention pooling compresses any length video)
-    
-    Parameters:
-        ~5.4M (MobileNetV3) + ~2.1M (Temporal + Attention) = ~7.5M params
     """
+    
+    # Backbone output dimensions
+    BACKBONE_DIMS = {
+        'mobilenetv3_large': 960,
+        'efficientnet_b0': 1280,
+    }
     
     def __init__(
         self,
@@ -189,22 +196,31 @@ class VideoEncoder(nn.Module):
         freeze_epochs: int = 5,
         num_temporal_conv: int = 2,
         kernel_size: int = 3,
-        dropout: float = 0.1
+        dropout: float = 0.1,
+        backbone: str = 'mobilenetv3_large'
     ):
         super().__init__()
         self.freeze_epochs = freeze_epochs
         self._frozen = True
         self.num_queries = num_queries
+        self.backbone_name = backbone
         
-        # MobileNetV3-Large backbone (efficient, mobile-friendly)
-        weights = models.MobileNet_V3_Large_Weights.IMAGENET1K_V1 if pretrained else None
-        mobilenet = models.mobilenet_v3_large(weights=weights)
+        # Select backbone
+        if backbone == 'mobilenetv3_large':
+            weights = models.MobileNet_V3_Large_Weights.IMAGENET1K_V1 if pretrained else None
+            net = models.mobilenet_v3_large(weights=weights)
+            self.backbone = nn.Sequential(*list(net.children())[:-2])
+            self.backbone_dim = 960
+        elif backbone == 'efficientnet_b0':
+            weights = models.EfficientNet_B0_Weights.IMAGENET1K_V1 if pretrained else None
+            net = models.efficientnet_b0(weights=weights)
+            self.backbone = net.features
+            self.backbone_dim = 1280
+        else:
+            raise ValueError(f"Unknown backbone: {backbone}. Use 'mobilenetv3_large' or 'efficientnet_b0'")
         
-        # Remove classifier, keep only features
-        # Output will be (B, 960, 7, 7) for 224x224 input
-        self.backbone = nn.Sequential(*list(mobilenet.children())[:-2])
         self.pool = nn.AdaptiveAvgPool2d(1)
-        self.backbone_dim = 960  # MobileNetV3-Large output channels
+        print(f"[INFO] Using backbone: {backbone} (output dim: {self.backbone_dim})")
         
         # Temporal attention pooling (includes temporal conv)
         self.temporal_attn = TemporalAttentionPooling(
